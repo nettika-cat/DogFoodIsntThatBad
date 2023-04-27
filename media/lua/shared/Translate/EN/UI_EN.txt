@@ -1,0 +1,4 @@
+UI_EN = {
+    UI_trait_UnpickyEater = "Unpicky Eater",
+    UI_trait_UnpickyEater_description = "Eating never increases unhappiness or boredom.",
+}
