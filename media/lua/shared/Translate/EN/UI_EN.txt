@@ -1,4 +1,6 @@
 UI_EN = {
     UI_trait_NotAPickyEater = "Not a Picky Eater",
-    UI_trait_NotAPickyEater_description = "No foods make you unhappy or bored.",
+    UI_trait_NotAPickyEaterdesc = "Foods never increases unhappiness or boredom.",
+    UI_trait_RefinedPalate = "Refined Palate",
+    UI_trait_RefinedPalatedesc = "Many additional low quality foods increase unhappiness and boredom.",
 }
