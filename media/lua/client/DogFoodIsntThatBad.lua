@@ -1,127 +1,68 @@
 local function adjustFoodNotPicky(item)
-    print("adjust not picky")
-
-    item:setUnhappyChange(math.min(item:getUnhappyChange(), 0))
-    item:setBoredomChange(math.min(item:getBoredomChange(), 0))
+    -- Cancel out any negative effects
+    if item:getUnhappyChange() > 0 then
+        item:setUnhappyChange(item:getUnhappyChangeUnmodified() - item:getUnhappyChange())
+    end
+    if item:getBoredomChange() > 0 then
+        item:setBoredomChange(item:getBoredomChangeUnmodified() - item:getBoredomChange())
+    end
 end
 
 local function adjustFoodVeryPicky(item)
-    print("adjust very picky")
+    local unhappyChange = item:getUnhappyChangeUnmodified()
+    local boredomChange = item:getBoredomChangeUnmodified()
 
-    local unhappyChange = item:getUnhappyChange()
-    local boredomChange = item:getBoredomChange()
+    -- Increase existng negative effects by 50%
+    if item:getUnhappyChange() > 0 then
+        unhappyChange = unhappyChange + item:getUnhappyChange() * 0.5
+    end
+    if item:getBoredomChange() > 0 then
+        boredomChange = boredomChange + item:getBoredomChange() * 0.5
+    end
 
-    -- Microwaved food is gross
+    -- Microwaved food is dull
     if item:isCookedInMicrowave() then
-        unhappyChange = unhappyChange + 5
         boredomChange = boredomChange + 10
-        print("microwaved")
     end
 
-    -- Canned food is gross
-    if string.match(item:getDisplayName(), "Canned ") then
-        unhappyChange = unhappyChange + 5
-        boredomChange = boredomChange + 10
-        print("canned")
-    end
-
-    -- Dog food is very gross
-    if string.match(item:getDisplayName(), "Dog Food") then
-        unhappyChange = unhappyChange + 20
-        print("dog food")
-    end
-
-    -- Tea Bag is very gross
-    if item:getDisplayName() == "Tea Bag" then
-        unhappyChange = unhappyChange + 20
-        print("tea bag")
-    end
-
-    -- Dry Ramen Noodles are pretty gross
-    if item:getDisplayName() == "Dry Ramen Noodles" then
+    -- Uncooked food which ought to be cooked is disgusting
+    if item:isCookable() and not item:isCooked() then
         unhappyChange = unhappyChange + 10
-        boredomChange = boredomChange + 10
-        print("dry ramen")
     end
 
-    -- Pickled jars are a little gross
-    if string.match(item:getDisplayName(), "Jar of ") then
+    -- Canned food is disgusting
+    if item:getEatType() == "can" then
         unhappyChange = unhappyChange + 10
-        boredomChange = boredomChange + 10
-        print("jar")
     end
 
-    -- Fried food is a little gross
-    if string.match(item:getDisplayName(), "Fried ") then
-        unhappyChange = unhappyChange + 10
-        boredomChange = boredomChange + 10
-        print("fried")
-    end
-
-    -- Beer is a little gross
-    if item:getFoodType() == "Beer" then
-        unhappyChange = unhappyChange + 10
-        print("beer")
-    end
-
-    -- Wine is very good
-    if item:getFoodType() == "Wine" then
-        unhappyChange = unhappyChange - 15
-        boredomChange = boredomChange - 5
-        print("wine")
-    end
-
-    -- Vegetables are pretty good
-    if item:getFoodType() == "Vegetables" then
-        unhappyChange = unhappyChange - 5
-        boredomChange = boredomChange - 10
-        print("vegetables")
-    end
-
-    -- Fruits are pretty good
-    if item:getFoodType() == "Fruits" then
-        unhappyChange = unhappyChange - 5
-        boredomChange = boredomChange - 10
-        print("fruits")
-    end
-
-    -- Egg is pretty good
-    if item:getFoodType() == "Egg" then
-        unhappyChange = unhappyChange - 5
-        print("egg")
-    end
-
-    -- Bread is pretty good
-    if item:getFoodType() == "Bread" then
-        unhappyChange = unhappyChange - 5
-        print("bread")
-    end
-
-    -- Processed Cheese food is gross
-    if item:getDisplayName() == "Processed Cheese" then
-        unhappyChange = unhappyChange + 5
-        boredomChange = boredomChange + 10
-        print("processed cheese")
-    end
-
-    -- Candy is a little gross
+    -- Candy is disgusting
     if item:getFoodType() == "Candy" then
-        unhappyChange = unhappyChange + 5
-        print("candy")
+        unhappyChange = unhappyChange + 10
     end
 
-    -- Dead critters are extremely gross
-    if string.match(item:getDisplayName(), "Dead ") then
-        unhappyChange = unhappyChange + 40
-        print("dead")
+    -- Sugar is disgusting
+    if item:getFoodType() == "Sugar" then
+        boredomChange = boredomChange + 10
     end
 
-    -- Increase negative effects by 50%
-    if unhappyChange > 0 then
-        unhappyChange = unhappyChange * 1.5
+    -- Appreciation of wine
+    if item:getFoodType() == "Wine" then
+        unhappyChange = unhappyChange - 10
     end
-    if boredomChange > 0 then
-        boredomChange = boredomChange * 1.5
+
+    -- Specific foods are gross
+    local grossFoods = {
+        { "^(BakingSoda|GravyMix|PancakeMix)$",                 20 },
+        { "^(Rice)?Vinegar$",                                   20 },
+        { "^(Ramen|Cereal|Butter|Corndog|Macandcheese|Smore)$", 10 },
+        { "^(Chicken|Fish|Oysters|Tofu)Fried$",                 10 },
+        { "^Crisps",                                            5 },
+        { "^(Processedcheese|RefriedBeans)$",                   5 }
+    }
+    for _, food in ipairs(grossFoods) do
+        if item:getName():find(food[1]) then
+            unhappyChange = unhappyChange + food[2]
+        end
     end
 
     item:setUnhappyChange(unhappyChange)
@@ -131,11 +72,14 @@ end
 local base_tooltip_render = ISToolTipInv.render
 
 function ISToolTipInv:render()
-    local origUnhappyChange = self.item:getUnhappyChange()
-    local origBoredomChange = self.item:getBoredomChange()
+    local origUnhappyChange
+    local origBoredomChange
 
-    -- Adjust food effects based on traits
-    if self.item:getType() == "Food" then
+    if self.item:IsFood() then
+        origUnhappyChange = self.item:getUnhappyChangeUnmodified()
+        origBoredomChange = self.item:getBoredomChangeUnmodified()
+
+        -- Adjust food effects based on traits
         local traits = getPlayer():getTraits()
         if traits:contains("NotAPickyEater") then
             adjustFoodNotPicky(self.item)
@@ -147,25 +91,25 @@ function ISToolTipInv:render()
     -- Call original function
     base_tooltip_render(self)
 
-    -- Reset food effects
-    self.item:setUnhappyChange(origUnhappyChange)
-    self.item:setBoredomChange(origBoredomChange)
+    if self.item:IsFood() then
+        -- Reset food effects
+        self.item:setUnhappyChange(origUnhappyChange)
+        self.item:setBoredomChange(origBoredomChange)
+    end
 end
 
 local base_perform = ISEatFoodAction.perform
 
 function ISEatFoodAction:perform()
-    local origUnhappyChange = self.item:getUnhappyChange()
-    local origBoredomChange = self.item:getBoredomChange()
+    local origUnhappyChange = self.item:getUnhappyChangeUnmodified()
+    local origBoredomChange = self.item:getBoredomChangeUnmodified()
 
     -- Adjust food effects based on traits
     local traits = getPlayer():getTraits()
     if traits:contains("NotAPickyEater") then
         adjustFoodNotPicky(self.item)
-        print("negated negative emotional effects")
     elseif traits:contains("RefiendPalate") then
         adjustFoodVeryPicky(self.item)
-        print("amplified negative emotional effects")
     end
 
     -- Call original function
