@@ -119,14 +119,14 @@ function ISToolTipInv:render()
     end
 end
 
-local base_perform = ISEatFoodAction.perform
+local base_eat_start = ISEatFoodAction.start
 
-function ISEatFoodAction:perform()
-    local origUnhappyChange = self.item:getUnhappyChangeUnmodified()
-    local origBoredomChange = self.item:getBoredomChangeUnmodified()
+function ISEatFoodAction:start()
+    self.origUnhappyChange = self.item:getUnhappyChangeUnmodified()
+    self.origBoredomChange = self.item:getBoredomChangeUnmodified()
 
     -- Adjust food effects based on traits
-    local traits = getPlayer():getTraits()
+    local traits = self.character:getTraits()
     if traits:contains("NotAPickyEater") then
         adjustFoodNotPicky(self.item)
     elseif traits:contains("RefiendPalate") then
@@ -134,9 +134,27 @@ function ISEatFoodAction:perform()
     end
 
     -- Call original function
-    base_perform(self)
+    base_eat_start(self)
+end
+
+local base_eat_stop = ISEatFoodAction.stop
+
+function ISEatFoodAction:stop()
+    -- Call original function
+    base_eat_stop(self)
 
     -- Reset food effects
-    self.item:setUnhappyChange(origUnhappyChange)
-    self.item:setBoredomChange(origBoredomChange)
+    self.item:setUnhappyChange(self.origUnhappyChange)
+    self.item:setBoredomChange(self.origBoredomChange)
+end
+
+local base_eat_perform = ISEatFoodAction.perform
+
+function ISEatFoodAction:perform()
+    -- Call original function
+    base_eat_perform(self)
+
+    -- Reset food effects
+    self.item:setUnhappyChange(self.origUnhappyChange)
+    self.item:setBoredomChange(self.origBoredomChange)
 end
