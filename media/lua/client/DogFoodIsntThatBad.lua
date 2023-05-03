@@ -35,34 +35,55 @@ local function adjustFoodVeryPicky(item)
         unhappyChange = unhappyChange + 10
     end
 
-    -- Candy is disgusting
-    if item:getFoodType() == "Candy" then
-        unhappyChange = unhappyChange + 10
-    end
-
-    -- Sugar is disgusting
-    if item:getFoodType() == "Sugar" then
-        boredomChange = boredomChange + 10
-    end
-
-    -- Appreciation of wine
-    if item:getFoodType() == "Wine" then
-        unhappyChange = unhappyChange - 10
-    end
-
-    -- Specific foods are gross
-    local grossFoods = {
-        { "^(BakingSoda|GravyMix|PancakeMix)$",                 20 },
-        { "^(Rice)?Vinegar$",                                   20 },
-        { "^(Ramen|Cereal|Butter|Corndog|Macandcheese|Smore)$", 10 },
-        { "^(Chicken|Fish|Oysters|Tofu)Fried$",                 10 },
-        { "^Crisps",                                            5 },
-        { "^(Processedcheese|RefriedBeans)$",                   5 }
+    -- Adjust food groups
+    local foodGroupAdjustments = {
+        ["Candy"] = 15,
+        ["SoftDrink"] = 10,
+        ["Sugar"] = 10,
+        ["Wine"] = -10,
     }
-    for _, food in ipairs(grossFoods) do
-        if item:getName():find(food[1]) then
-            unhappyChange = unhappyChange + food[2]
-        end
+    if foodGroupAdjustments[item:getFoodType()] then
+        unhappyChange = unhappyChange + foodGroupAdjustments[item:getFoodType()]
+    end
+
+    -- Adjust specific foods
+    local foodAdjustments = {
+        ["BakingSoda"] = 20,
+        ["Butter"] = 10,
+        ["Candycane"] = 5,
+        ["Cereal"] = 10,
+        ["ChickenFried"] = 10,
+        ["ChocoCakes"] = 15,
+        ["CocoaPowder"] = 10,
+        ["CookiesSugar"] = 5,
+        ["Corndog"] = 10,
+        ["Cornflour"] = 20,
+        ["Crisps"] = 5,
+        ["Crisps2"] = 5,
+        ["Crisps3"] = 5,
+        ["Crisps4"] = 5,
+        ["FishFried"] = 10,
+        ["GravyMix"] = 20,
+        ["Gum"] = 10,
+        ["HiHis"] = 15,
+        ["Icecream"] = 10,
+        ["JuiceBox"] = 10,
+        ["Lollipop"] = 15,
+        ["Macandcheese"] = 20,
+        ["MintCandy"] = 15,
+        ["OystersFried"] = 10,
+        ["PancakeMix"] = 20,
+        ["Plonkies"] = 15,
+        ["Popcorn"] = 5,
+        ["Processedcheese"] = 5,
+        ["QuaggaCakes"] = 15,
+        ["RefriedBeans"] = 5,
+        ["Smore"] = 10,
+        ["SnoGlobes"] = 15,
+        ["TofuFried"] = 10,
+    }
+    if foodAdjustments[item:getType()] then
+        unhappyChange = unhappyChange + foodAdjustments[item:getType()]
     end
 
     item:setUnhappyChange(unhappyChange)
