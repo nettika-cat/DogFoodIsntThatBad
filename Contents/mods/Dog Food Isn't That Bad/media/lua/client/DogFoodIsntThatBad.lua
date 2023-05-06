@@ -8,7 +8,7 @@ local function adjustFoodNotPicky(item)
     end
 end
 
-local function adjustFoodVeryPicky(item)
+local function adjustFoodVeryPicky(item, proportion)
     local unhappyChange = item:getUnhappyChangeUnmodified()
     local boredomChange = item:getBoredomChangeUnmodified()
 
@@ -22,17 +22,17 @@ local function adjustFoodVeryPicky(item)
 
     -- Microwaved food is dull
     if item:isCookedInMicrowave() then
-        boredomChange = boredomChange + 10
+        boredomChange = boredomChange + 10 * proportion
     end
 
     -- Uncooked food which ought to be cooked is disgusting
     if item:isCookable() and not item:isCooked() then
-        unhappyChange = unhappyChange + 10
+        unhappyChange = unhappyChange + 10 * proportion
     end
 
     -- Canned food is disgusting
     if item:getEatType() == "can" then
-        unhappyChange = unhappyChange + 10
+        unhappyChange = unhappyChange + 10 * proportion
     end
 
     -- Adjust food groups
@@ -43,7 +43,7 @@ local function adjustFoodVeryPicky(item)
         ["Wine"] = -10,
     }
     if foodGroupAdjustments[item:getFoodType()] then
-        unhappyChange = unhappyChange + foodGroupAdjustments[item:getFoodType()]
+        unhappyChange = unhappyChange + foodGroupAdjustments[item:getFoodType()] * proportion
     end
 
     -- Adjust specific foods
@@ -83,11 +83,27 @@ local function adjustFoodVeryPicky(item)
         ["TofuFried"] = 10,
     }
     if foodAdjustments[item:getType()] then
-        unhappyChange = unhappyChange + foodAdjustments[item:getType()]
+        unhappyChange = unhappyChange + foodAdjustments[item:getType()] * proportion
     end
 
     item:setUnhappyChange(unhappyChange)
     item:setBoredomChange(boredomChange)
+end
+
+local function getProportion(food, n)
+    n = math.min(n, 1.0)
+    n = math.max(n, 0.0)
+    if food:getBaseHunger() ~= 0 and food:getHungChange() ~= 0 then
+        n = math.min(food:getBaseHunger() * n / food:getHungChange(), 1.0)
+        n = math.max(n, 0.0)
+    end
+    if food:getHungChange() < 0 and food:getHungChange() * (1.0 - n) > -0.01 then
+        n = 1.0
+    end
+    if food:getHungChange() == 0 and food:getThirstChange() < 0 and food:getThirstChange() * (1.0 - n) > -0.01 then
+        n = 1.0
+    end
+    return n
 end
 
 local base_tooltip_render = ISToolTipInv.render
@@ -105,7 +121,12 @@ function ISToolTipInv:render()
         if traits:contains("NotAPickyEater") then
             adjustFoodNotPicky(self.item)
         elseif traits:contains("RefinedPalate") then
-            adjustFoodVeryPicky(self.item)
+            if self.item:getBaseHunger() ~= 0 then
+                local percentage = self.item:getHungChange() / self.item:getBaseHunger()
+                adjustFoodVeryPicky(self.item, percentage)
+            else
+                adjustFoodVeryPicky(self.item, 1)
+            end
         end
     end
 
@@ -124,13 +145,14 @@ local base_eat_start = ISEatFoodAction.start
 function ISEatFoodAction:start()
     self.origUnhappyChange = self.item:getUnhappyChangeUnmodified()
     self.origBoredomChange = self.item:getBoredomChangeUnmodified()
+    self.proportion = getProportion(self.item, self.percentage)
 
     -- Adjust food effects based on traits
     local traits = self.character:getTraits()
     if traits:contains("NotAPickyEater") then
         adjustFoodNotPicky(self.item)
-    elseif traits:contains("RefiendPalate") then
-        adjustFoodVeryPicky(self.item)
+    elseif traits:contains("RefinedPalate") then
+        adjustFoodVeryPicky(self.item, self.percentage)
     end
 
     -- Call original function
@@ -144,8 +166,13 @@ function ISEatFoodAction:stop()
     base_eat_stop(self)
 
     -- Reset food effects
-    self.item:setUnhappyChange(self.origUnhappyChange)
-    self.item:setBoredomChange(self.origBoredomChange)
+    local percentage = self:getJobDelta()
+    if percentage > 0.95 then
+        percentage = 1.0
+    end
+    local adjust = 1 - (self.proportion * percentage)
+    self.item:setUnhappyChange(self.origUnhappyChange * adjust)
+    self.item:setBoredomChange(self.origBoredomChange * adjust)
 end
 
 local base_eat_perform = ISEatFoodAction.perform
@@ -155,6 +182,7 @@ function ISEatFoodAction:perform()
     base_eat_perform(self)
 
     -- Reset food effects
-    self.item:setUnhappyChange(self.origUnhappyChange)
-    self.item:setBoredomChange(self.origBoredomChange)
+    local adjust = 1 - self.proportion
+    self.item:setUnhappyChange(self.origUnhappyChange * adjust)
+    self.item:setBoredomChange(self.origBoredomChange * adjust)
 end
