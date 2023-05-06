@@ -1,0 +1,14 @@
+version=1
+id=2972019168
+title=Dog Food Isn't That Bad
+description=Inspired by [url=https://twitter.com/FuwacocoCh/status/1647802097260191745]this Tweet[/url].
+description=
+description=Adds two traits, [b]"Not a Picky Eater"[/b] and [b]"Refined Palate"[/b].
+description=
+description=A character with the "Not a Picky Eater" trait doesn't experience negative emotional effects from eating. Ever. Dog food, tomato paste, stale bread, a rotten apple, a burnt steak, a dead rat -- food is food! Don't let it go to waste.
+description=
+description=A character with the "Refined Palate" trait is a true connoisseur trapped in the culinary hellscape that is the apocalypse. Negative emotional effects from eating are boosted by 50%, anything cooked in a microwave is boring, and many low quality foods that would otherwise be neutral or positive -- candy, chips, soft drinks, canned food, etc. -- make them unhappy.
+description=
+description=[url=https://github.com/nettika-cat/DogFoodIsntThatBad]Code available under the MIT license on GitHub.[/url]
+tags=Build 41;Multiplayer;Traits
+visibility=unlisted
