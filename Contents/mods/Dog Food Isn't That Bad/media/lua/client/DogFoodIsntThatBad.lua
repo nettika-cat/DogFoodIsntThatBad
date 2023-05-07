@@ -1,3 +1,5 @@
+local adjusted = {}
+
 local function adjustFoodNotPicky(item)
     -- Cancel out any negative effects
     if item:getUnhappyChange() > 0 then
@@ -112,7 +114,9 @@ function ISToolTipInv:render()
     local origUnhappyChange
     local origBoredomChange
 
-    if self.item:IsFood() then
+    isAdjusted = adjusted[self.item:getType()]
+
+    if self.item:IsFood() and not isAdjusted then
         origUnhappyChange = self.item:getUnhappyChangeUnmodified()
         origBoredomChange = self.item:getBoredomChangeUnmodified()
 
@@ -133,7 +137,7 @@ function ISToolTipInv:render()
     -- Call original function
     base_tooltip_render(self)
 
-    if self.item:IsFood() then
+    if self.item:IsFood() and not isAdjusted then
         -- Reset food effects
         self.item:setUnhappyChange(origUnhappyChange)
         self.item:setBoredomChange(origBoredomChange)
@@ -151,8 +155,10 @@ function ISEatFoodAction:start()
     local traits = self.character:getTraits()
     if traits:contains("NotAPickyEater") then
         adjustFoodNotPicky(self.item)
+        adjusted[self.item:getType()] = true
     elseif traits:contains("RefinedPalate") then
         adjustFoodVeryPicky(self.item, self.percentage)
+        adjusted[self.item:getType()] = true
     end
 
     -- Call original function
@@ -173,6 +179,7 @@ function ISEatFoodAction:stop()
     local adjust = 1 - (self.proportion * percentage)
     self.item:setUnhappyChange(self.origUnhappyChange * adjust)
     self.item:setBoredomChange(self.origBoredomChange * adjust)
+    adjusted[self.item:getType()] = nil
 end
 
 local base_eat_perform = ISEatFoodAction.perform
@@ -185,4 +192,5 @@ function ISEatFoodAction:perform()
     local adjust = 1 - self.proportion
     self.item:setUnhappyChange(self.origUnhappyChange * adjust)
     self.item:setBoredomChange(self.origBoredomChange * adjust)
+    adjusted[self.item:getType()] = nil
 end
